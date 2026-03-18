@@ -1,0 +1,68 @@
+name: Deploy Admin (GCP Free Tier)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: deploy-admin-staging
+  cancel-in-progress: false
+
+env:
+  GCP_REGION: us-central1
+  GCS_BUCKET: grabakar-admin-staging
+  VITE_API_URL: https://grabakar-backend-1089044937741.us-central1.run.app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_API_URL: ${{ env.VITE_API_URL }}
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Upload to GCS (SPA)
+        run: |
+          gcloud storage rsync dist/ "gs://${{ env.GCS_BUCKET }}/" \
+            --recursive \
+            --delete-unmatched-destination-objects
+
+          # Ensure SPA routing works after updates
+          gcloud storage buckets update "gs://${{ env.GCS_BUCKET }}/" \
+            --web-main-page-suffix=index.html \
+            --web-not-found-page=index.html
+
+      - name: Verify deployment
+        run: |
+          URL="https://storage.googleapis.com/${{ env.GCS_BUCKET }}/index.html"
+          STATUS="$(curl -s -o /dev/null -w "%{http_code}" "$URL" || true)"
+          if [ "$STATUS" != "200" ]; then
+            echo "ERROR: expected 200 from $URL, got $STATUS"
+            exit 1
+          fi
+          echo "Admin deployed OK (HTTP 200)"
+
