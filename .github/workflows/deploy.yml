@@ -54,9 +54,13 @@ jobs:
             --delete-unmatched-destination-objects
 
           # Ensure SPA routing works after updates
-          gcloud storage buckets update "gs://${{ env.GCS_BUCKET }}/" \
-            --web-main-page-suffix=index.html \
-            --web-error-page=index.html
+          BUCKET_UPDATE_ARGS="--web-main-page-suffix=index.html --web-error-page=index.html"
+          echo "Sanity check: gcloud storage buckets update args: ${BUCKET_UPDATE_ARGS}"
+          if [[ "${BUCKET_UPDATE_ARGS}" == *"--web-not-found-page"* ]]; then
+            echo "ERROR: forbidden flag --web-not-found-page detected (typo)."
+            exit 1
+          fi
+          gcloud storage buckets update "gs://${{ env.GCS_BUCKET }}/" ${BUCKET_UPDATE_ARGS}
 
       - name: Verify deployment
         run: |
