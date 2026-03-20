@@ -56,7 +56,7 @@ jobs:
           # Ensure SPA routing works after updates
           gcloud storage buckets update "gs://${{ env.GCS_BUCKET }}/" \
             --web-main-page-suffix=index.html \
-            --web-not-found-page=index.html
+            --web-error-page=index.html
 
       - name: Verify deployment
         run: |
