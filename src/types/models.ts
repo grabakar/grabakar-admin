@@ -1,9 +1,16 @@
+export type PanelPersona =
+  | 'none'
+  | 'platform_admin'
+  | 'tenant_admin'
+  | 'panel_operator_readonly'
+
 export interface Usuario {
   id: number
   username: string
   nombre_completo: string
   rol: string
   is_staff?: boolean
+  panel_persona?: PanelPersona
   email?: string
   tenant?: TenantMin
   sucursal?: SucursalMin
@@ -54,18 +61,12 @@ export interface LeyCaso {
   activa: boolean
 }
 
-export interface ImpresionVidrio {
-  uuid: string
-  numero_vidrio: number
-  nombre_vidrio: string
-  fecha_impresion: string | null
-  impreso: boolean
-  cantidad_impresiones: number
-}
-
 export interface Grabado {
   uuid: string
   patente: string
+  // Backend admin serializers may omit this depending on panel scope/contract.
+  // The UI formatter handles missing values (`'—'`).
+  rut_cliente?: string
   vin_chasis?: string | null
   orden_trabajo?: string | null
   responsable_texto?: string
@@ -81,9 +82,7 @@ export interface Grabado {
   device_id?: string
   estado_sync: string
   es_duplicado: boolean
-  cantidad_vidrios?: number
-  vidrios_impresos?: number
-  vidrios?: ImpresionVidrio[]
+  cantidad_impresiones: number
 }
 
 export interface DashboardStats {

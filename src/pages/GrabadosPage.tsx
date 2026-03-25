@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useGrabados } from '../api/grabados'
 import { useTenants } from '../api/tenants'
+import { formatearRut } from '../utils/format'
 import type { Grabado } from '../types/models'
 
 export function GrabadosPage() {
@@ -51,6 +52,7 @@ export function GrabadosPage() {
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
               <th className="text-left p-3 font-medium text-slate-700">Patente</th>
+              <th className="text-left p-3 font-medium text-slate-700">RUT</th>
               <th className="text-left p-3 font-medium text-slate-700">VIN</th>
               <th className="text-left p-3 font-medium text-slate-700">Tipo mov.</th>
               <th className="text-left p-3 font-medium text-slate-700">Operador</th>
@@ -64,6 +66,7 @@ export function GrabadosPage() {
             {data?.results.map((g: Grabado) => (
               <tr key={g.uuid} className="border-b border-slate-100 hover:bg-slate-50">
                 <td className="p-3 font-mono">{g.patente}</td>
+                <td className="p-3 font-mono text-slate-600">{formatearRut(g.rut_cliente)}</td>
                 <td className="p-3 text-slate-600">{g.vin_chasis ? `${g.vin_chasis.slice(0, 8)}…` : '—'}</td>
                 <td className="p-3">{g.tipo_movimiento}</td>
                 <td className="p-3">{g.usuario_responsable?.nombre_completo ?? '—'}</td>

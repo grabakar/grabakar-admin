@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useGrabado } from '../api/grabados'
+import { formatearRut } from '../utils/format'
 import type { Grabado as GrabadoType } from '../types/models'
 
 export function GrabadoDetailPage() {
@@ -23,6 +24,8 @@ export function GrabadoDetailPage() {
         <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
           <dt className="text-slate-500">Patente</dt>
           <dd className="font-mono">{g.patente}</dd>
+          <dt className="text-slate-500">RUT Cliente</dt>
+          <dd className="font-mono">{formatearRut(g.rut_cliente)}</dd>
           <dt className="text-slate-500">VIN</dt>
           <dd>{g.vin_chasis || '—'}</dd>
           <dt className="text-slate-500">Orden trabajo</dt>
@@ -45,38 +48,10 @@ export function GrabadoDetailPage() {
           <dd><span className={`px-2 py-0.5 rounded text-xs ${g.estado_sync === 'sincronizado' ? 'bg-green-100' : g.estado_sync === 'error' ? 'bg-red-100' : 'bg-amber-100'}`}>{g.estado_sync}</span></dd>
           <dt className="text-slate-500">Duplicado</dt>
           <dd>{g.es_duplicado ? 'Sí' : 'No'}</dd>
+          <dt className="text-slate-500">Impresiones</dt>
+          <dd>{g.cantidad_impresiones}</dd>
         </dl>
       </div>
-
-      {g.vidrios && g.vidrios.length > 0 && (
-        <div>
-          <h2 className="text-lg font-medium text-slate-800 mb-2">Vidrios</h2>
-          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left p-3 font-medium text-slate-700">Nº</th>
-                  <th className="text-left p-3 font-medium text-slate-700">Nombre</th>
-                  <th className="text-left p-3 font-medium text-slate-700">Impreso</th>
-                  <th className="text-right p-3 font-medium text-slate-700">Cantidad</th>
-                  <th className="text-left p-3 font-medium text-slate-700">Fecha impresión</th>
-                </tr>
-              </thead>
-              <tbody>
-                {g.vidrios.map((v) => (
-                  <tr key={v.uuid} className="border-t border-slate-100">
-                    <td className="p-3">{v.numero_vidrio}</td>
-                    <td className="p-3">{v.nombre_vidrio}</td>
-                    <td className="p-3">{v.impreso ? 'Sí' : 'No'}</td>
-                    <td className="p-3 text-right">{v.cantidad_impresiones}</td>
-                    <td className="p-3 text-slate-600">{v.fecha_impresion ? new Date(v.fecha_impresion).toLocaleString() : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

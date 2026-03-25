@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
-import type { Usuario, PaginatedResponse } from '../types/models'
+import type { Usuario, PaginatedResponse, PanelPersona } from '../types/models'
 
 const POLL_INTERVAL = 30_000
 
@@ -18,7 +18,18 @@ export function useUsuarios(params?: { page?: number; page_size?: number; tenant
 export function useCreateUsuario() {
   const q = useQueryClient()
   return useMutation({
-    mutationFn: async (body: { username: string; password: string; nombre_completo: string; email?: string; rol: string; tenant_id: number; sucursal_id?: number | null; activo?: boolean; is_staff?: boolean }) => {
+    mutationFn: async (body: {
+      username: string
+      password: string
+      nombre_completo: string
+      email?: string
+      rol: string
+      tenant_id: number
+      sucursal_id?: number | null
+      activo?: boolean
+      is_staff?: boolean
+      panel_persona?: PanelPersona
+    }) => {
       const { data } = await api.post<Usuario>('/admin/usuarios/', body)
       return data
     },
