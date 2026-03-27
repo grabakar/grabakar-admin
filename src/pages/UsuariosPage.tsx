@@ -2,14 +2,27 @@ import { useState } from 'react'
 import { useUsuarios, useCreateUsuario } from '../api/usuarios'
 import { useTenants } from '../api/tenants'
 import { useSucursales } from '../api/sucursales'
-import type { Usuario } from '../types/models'
+import { useAuth } from '../contexts/AuthContext'
+import type { PanelPersona, Usuario } from '../types/models'
 
 export function UsuariosPage() {
+  const { isPlatformAdmin, user: authUser } = useAuth()
   const [page, setPage] = useState(1)
   const [tenantId, setTenantId] = useState<number | ''>('')
   const [rol, setRol] = useState('')
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ username: '', password: '', nombre_completo: '', email: '', rol: 'operador', tenant_id: 0, sucursal_id: null as number | null, activo: true, is_staff: false })
+  const [form, setForm] = useState({
+    username: '',
+    password: '',
+    nombre_completo: '',
+    email: '',
+    rol: 'operador',
+    tenant_id: 0,
+    sucursal_id: null as number | null,
+    activo: true,
+    is_staff: false,
+    panel_persona: 'none' as PanelPersona,
+  })
 
   const { data, isLoading } = useUsuarios({ page, page_size: 20, tenant_id: tenantId || undefined, rol: rol || undefined })
   const { data: tenantsData } = useTenants({ page_size: 100 })
@@ -22,7 +35,7 @@ export function UsuariosPage() {
   function handleCreate(e: React.FormEvent) {
     e.preventDefault()
     if (!form.tenant_id) return
-    create.mutate({
+    const body = {
       username: form.username,
       password: form.password,
       nombre_completo: form.nombre_completo,
@@ -31,11 +44,28 @@ export function UsuariosPage() {
       tenant_id: form.tenant_id,
       sucursal_id: form.sucursal_id,
       activo: form.activo,
-      is_staff: form.is_staff,
-    }, {
+      is_staff: isPlatformAdmin ? form.is_staff : false,
+      panel_persona: isPlatformAdmin
+        ? form.is_staff
+          ? ('platform_admin' as const)
+          : ('none' as const)
+        : form.panel_persona,
+    }
+    create.mutate(body, {
       onSuccess: () => {
         setShowForm(false)
-        setForm({ username: '', password: '', nombre_completo: '', email: '', rol: 'operador', tenant_id: tenants[0]?.id ?? 0, sucursal_id: null, activo: true, is_staff: false })
+        setForm({
+          username: '',
+          password: '',
+          nombre_completo: '',
+          email: '',
+          rol: 'operador',
+          tenant_id: tenants[0]?.id ?? 0,
+          sucursal_id: null,
+          activo: true,
+          is_staff: false,
+          panel_persona: 'none',
+        })
       },
     })
   }
@@ -46,6 +76,7 @@ export function UsuariosPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-800">Usuarios</h1>
+        {(isPlatformAdmin || authUser?.panel_persona === 'tenant_admin') && (
         <button
           type="button"
           onClick={() => { setShowForm(true); setForm((f) => ({ ...f, tenant_id: tenants[0]?.id ?? 0 })); }}
@@ -53,6 +84,7 @@ export function UsuariosPage() {
         >
           Nuevo usuario
         </button>
+        )}
       </div>
 
       <div className="flex gap-2">
@@ -90,7 +122,19 @@ export function UsuariosPage() {
               <option value="admin">Admin</option>
             </select>
             <label className="flex items-center gap-2"><input type="checkbox" checked={form.activo} onChange={(e) => setForm((f) => ({ ...f, activo: e.target.checked }))} /> Activo</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_staff} onChange={(e) => setForm((f) => ({ ...f, is_staff: e.target.checked }))} /> Acceso admin panel</label>
+            {isPlatformAdmin && (
+              <label className="flex items-center gap-2"><input type="checkbox" checked={form.is_staff} onChange={(e) => setForm((f) => ({ ...f, is_staff: e.target.checked }))} /> Administrador de plataforma (staff)</label>
+            )}
+            {authUser?.panel_persona === 'tenant_admin' && (
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">Acceso al panel web</label>
+                <select value={form.panel_persona} onChange={(e) => setForm((f) => ({ ...f, panel_persona: e.target.value as PanelPersona }))} className="w-full border border-slate-300 rounded px-3 py-2">
+                  <option value="none">Sin panel</option>
+                  <option value="tenant_admin">Admin de cliente</option>
+                  <option value="panel_operator_readonly">Solo lectura (operador)</option>
+                </select>
+              </div>
+            )}
             <div className="flex gap-2">
               <button type="submit" className="bg-slate-800 text-white px-4 py-2 rounded text-sm" disabled={create.isPending}>Crear</button>
               <button type="button" onClick={() => setShowForm(false)} className="border border-slate-300 px-4 py-2 rounded text-sm">Cancelar</button>
@@ -108,6 +152,7 @@ export function UsuariosPage() {
               <th className="text-left p-3 font-medium text-slate-700">Nombre</th>
               <th className="text-left p-3 font-medium text-slate-700">Rol</th>
               <th className="text-left p-3 font-medium text-slate-700">Tenant</th>
+              <th className="text-left p-3 font-medium text-slate-700">Panel</th>
               <th className="text-left p-3 font-medium text-slate-700">Activo</th>
               <th className="text-left p-3 font-medium text-slate-700">Último login</th>
             </tr>
@@ -119,6 +164,7 @@ export function UsuariosPage() {
                 <td className="p-3">{u.nombre_completo}</td>
                 <td className="p-3">{u.rol}</td>
                 <td className="p-3">{u.tenant?.nombre ?? '—'}</td>
+                <td className="p-3 text-slate-600">{u.panel_persona ?? '—'}</td>
                 <td className="p-3">{u.activo ? 'Sí' : 'No'}</td>
                 <td className="p-3 text-slate-500">{u.last_login ? new Date(u.last_login).toLocaleString() : '—'}</td>
               </tr>
