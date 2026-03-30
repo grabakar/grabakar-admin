@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(AUTH_REFRESH)
     localStorage.removeItem(AUTH_USER)
     setUser(null)
-    window.location.href = '/login'
+    window.location.hash = '/login'
   }, [])
 
   useEffect(() => {
