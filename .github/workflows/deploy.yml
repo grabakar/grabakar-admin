@@ -53,6 +53,9 @@ jobs:
             --recursive \
             --delete-unmatched-destination-objects
 
+          # Ensure index.html is NEVER cached by browsers to prevent broken updates
+          gcloud storage objects update "gs://${{ env.GCS_BUCKET }}/index.html" --cache-control="no-cache, max-age=0"
+
           # Ensure SPA routing works after updates
           BUCKET_UPDATE_ARGS="--web-main-page-suffix=index.html --web-error-page=index.html"
           echo "Sanity check: gcloud storage buckets update args: ${BUCKET_UPDATE_ARGS}"
