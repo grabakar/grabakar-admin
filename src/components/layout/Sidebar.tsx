@@ -27,7 +27,7 @@ export function Sidebar() {
   return (
     <aside className="w-56 bg-slate-800 text-slate-200 min-h-screen flex flex-col">
       <div className="p-4 border-b border-slate-700">
-        <span className="font-semibold text-lg">GrabaKar Admin</span>
+        <span className="font-semibold text-lg">Panel Admin</span>
       </div>
       <nav className="flex-1 p-2">
         {visible.map(({ to, label }) => (
