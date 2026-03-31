@@ -1,10 +1,21 @@
 import { createContext, useContext, useCallback, useState, useEffect, type ReactNode } from 'react'
 import { api } from '../api/client'
-import type { Usuario, LoginResponse } from '../types/models'
+import type { Usuario, LoginResponse, PanelPersona } from '../types/models'
 
 const AUTH_ACCESS = 'admin_access_token'
 const AUTH_REFRESH = 'admin_refresh_token'
 const AUTH_USER = 'admin_user'
+
+const PANEL_ALLOWED: ReadonlySet<PanelPersona> = new Set([
+  'platform_admin',
+  'tenant_admin',
+  'panel_operator_readonly',
+])
+
+function isPanelLogin(u: Usuario | null | undefined): boolean {
+  const p = u?.panel_persona
+  return !!p && PANEL_ALLOWED.has(p)
+}
 
 interface AuthState {
   user: Usuario | null
@@ -15,7 +26,10 @@ interface AuthState {
 interface AuthContextValue extends AuthState {
   login: (username: string, password: string) => Promise<void>
   logout: () => void
+  /** @deprecated prefer panelPersona === 'platform_admin' */
   isStaff: boolean
+  panelPersona: PanelPersona | null
+  isPlatformAdmin: boolean
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -35,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (username: string, password: string) => {
     const { data } = await api.post<LoginResponse>('/auth/login/', { username, password })
-    if (!data.usuario?.is_staff) {
+    if (!isPanelLogin(data.usuario)) {
       throw new Error('Tu cuenta no tiene acceso al panel de administración.')
     }
     localStorage.setItem(AUTH_ACCESS, data.access_token)
@@ -49,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(AUTH_REFRESH)
     localStorage.removeItem(AUTH_USER)
     setUser(null)
-    window.location.href = '/login'
+    window.location.hash = '/login'
   }, [])
 
   useEffect(() => {
@@ -57,13 +71,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false)
   }, [])
 
+  const panelPersona = (user?.panel_persona as PanelPersona | undefined) ?? null
+  const isPlatformAdmin = panelPersona === 'platform_admin'
+
   const value: AuthContextValue = {
     user,
-    isAuthenticated: !!user?.is_staff,
+    isAuthenticated: isPanelLogin(user),
     isLoading,
     login,
     logout,
-    isStaff: !!user?.is_staff,
+    isStaff: isPlatformAdmin,
+    panelPersona,
+    isPlatformAdmin,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
