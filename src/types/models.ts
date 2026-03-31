@@ -24,6 +24,11 @@ export interface TenantMin {
   nombre: string
 }
 
+export interface TenantPrecios {
+  precio_grabado: number | null
+  precio_vidrio: number | null
+}
+
 export interface Tenant {
   id: number
   nombre: string
@@ -31,7 +36,7 @@ export interface Tenant {
   logo_url: string | null
   color_primario: string
   color_secundario: string
-  configuracion_json: Record<string, unknown>
+  configuracion_json: Record<string, unknown> & { precios?: TenantPrecios }
   sucursales_count?: number
   usuarios_count?: number
   grabados_mes_count?: number
